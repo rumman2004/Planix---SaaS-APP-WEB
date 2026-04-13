@@ -28,12 +28,15 @@ app.use(cors({
     const allowedOrigins = [
       process.env.CLIENT_URL, // e.g., https://planix-omega.vercel.app
       'http://localhost:5173',
+      'https://localhost:5173',
       'http://localhost:5000',
+      'https://planix-server-production.up.railway.app', // Railway self-reference
     ];
 
     // 2. Allow specific domains or local development IPs
-    const isAllowed = allowedOrigins.includes(origin) || 
+    const isAllowed = allowedOrigins.filter(Boolean).includes(origin) || 
                       origin.startsWith('http://localhost:') || 
+                      origin.startsWith('https://localhost:') ||
                       origin.startsWith('http://192.168.');
 
     if (isAllowed) {
