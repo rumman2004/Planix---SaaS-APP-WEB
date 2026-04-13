@@ -23,17 +23,15 @@ const googleService = {
     const auth = getAuthClient(refreshToken);
     const calendar = google.calendar({ version: 'v3', auth });
 
-    const currentYearStart = new Date(new Date().getFullYear(), 0, 1); // January 1st of this year
+    const currentYearStart = new Date(new Date().getFullYear(), 0, 1);
     const sixMonthsLater = new Date();
-    sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6); 
+    sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
 
     try {
       const { data: { items: calendars } } = await calendar.calendarList.list();
-      let allEvents = [];
-
-      for (const cal of calendars) {
-        // Skip some system holiday calendars if you don't want spam, though allowing them is fine.
-        // Let's filter out 'Holidays' if user considers them annoying, but standard practice is fetching all.
+      
+      // Parallelize!
+      const calendarPromises = calendars.map(async (cal) => {
         try {
           const response = await calendar.events.list({
             calendarId: cal.id,
@@ -52,7 +50,7 @@ const googleService = {
                                     cal.summary.toLowerCase().includes('festival');
           const isCalendarBirthday = cal.id.includes('contacts@group.v.calendar.google.com') || cal.summary.toLowerCase().includes('birthday');
           
-          const mappedEvents = (response.data.items || []).map(ev => {
+          return (response.data.items || []).map(ev => {
             const isEventBirthday = isCalendarBirthday || (ev.summary && ev.summary.toLowerCase().includes('birthday'));
             const isEventHoliday = isCalendarHoliday || (ev.summary && (ev.summary.toLowerCase().includes('holiday') || ev.summary.toLowerCase().includes('festival')));
             
@@ -61,13 +59,14 @@ const googleService = {
               planixEventType: isEventBirthday ? 'birthday' : (isEventHoliday ? 'holiday' : 'event')
             };
           });
-          
-          allEvents = allEvents.concat(mappedEvents);
         } catch (err) {
           console.error(`Skipping calendar fetching due to permission: ${cal.summary}`);
+          return [];
         }
-      }
-      return allEvents;
+      });
+
+      const results = await Promise.all(calendarPromises);
+      return results.flat();
     } catch (err) {
       console.error('Failed calendar fetch', err.message);
       return [];
@@ -81,11 +80,10 @@ const googleService = {
 
     try {
       const { data: { items: taskLists } } = await tasksService.tasklists.list();
-      let allTasks = [];
-
-      for (const list of (taskLists || [])) {
+      
+      // Parallelize!
+      const taskPromises = (taskLists || []).map(async (list) => {
         try {
-          // Fetch tasks (both completed and needsAction within reason)
           const response = await tasksService.tasks.list({
             tasklist: list.id,
             showCompleted: true,
@@ -94,17 +92,19 @@ const googleService = {
             maxResults: 150,
           });
 
-          const tasks = (response.data.items || []).map(t => ({
+          return (response.data.items || []).map(t => ({
             ...t,
             planixEventType: 'task',
             planixTaskListId: list.id
           }));
-          allTasks = allTasks.concat(tasks);
         } catch (e) {
           console.error(`Skipping tasklist fetching ${list.title}`);
+          return [];
         }
-      }
-      return allTasks;
+      });
+
+      const results = await Promise.all(taskPromises);
+      return results.flat();
     } catch (err) {
       console.error('Failed to list tasks', err);
       return [];
