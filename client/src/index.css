@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════
+   PLANIX — Luminous Curator / CoachPro Theme
+   Location: client/src/index.css
+═══════════════════════════════════════════════════ */
+
+@theme {
+  --color-primary: #006666;
+  --color-primary-container: #8dedec;
+  --color-primary-dim: #005959;
+  --color-secondary: #006a34;
+  --color-secondary-container: #83fba5;
+  --color-tertiary: #006479;
+  --color-tertiary-container: #40cef3;
+  --color-error: #b31b25;
+  
+  --color-surface: #f7f7f2;
+  --color-surface-container-low: #f1f1ec;
+  --color-surface-container: #e8e9e3;
+  --color-surface-container-high: #e2e3dd;
+  --color-surface-container-lowest: #ffffff;
+  
+  --color-on-surface: #2d2f2c;
+  --color-on-surface-variant: #5a5c58;
+  --color-on-primary: #bbfffe;
+  --color-on-secondary: #cdffd4;
+  
+  --color-outline: #767773;
+  --color-outline-variant: #adada9;
+
+  --font-headline: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-label: 'Inter', sans-serif;
+
+  /* --- Glassmorphism Tokens --- */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-blur: blur(20px);
+}
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    @apply bg-surface text-on-surface antialiased overflow-x-hidden;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--color-surface-container-high); border-radius: 99px; }
+}
+
+@layer utilities {
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+  }
+  
+  .teal-glow {
+    box-shadow: 0 20px 40px -15px rgba(0, 102, 102, 0.1);
+  }
+}
