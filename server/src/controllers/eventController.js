@@ -10,7 +10,7 @@ exports.getEvents = async (req, res) => {
       try {
         // --- A. Fetch standard Calendar Events ---
         const googleEvents = await googleService.listCalendarEvents(req.userId, user.refresh_token);
-        
+
         for (const gEvent of googleEvents) {
           const isHoliday = gEvent.planixEventType === 'holiday';
           await EventModel.upsertFromGoogle({
@@ -70,23 +70,23 @@ exports.getEvents = async (req, res) => {
 
         // --- D. HARD SYNC CLEANUP ---
         const syncedIds = [
-          ...googleEvents.map(e => e.id), 
+          ...googleEvents.map(e => e.id),
           ...googleTasks.map(t => t.id),
           ...birthdayEvents.map(b => b.id)
         ].filter(Boolean);
 
         if (syncedIds.length > 0) {
           const pool = require('../config/db');
-          
+
           // Cancel orphaned Tasks
           await pool.query(
-            "UPDATE events SET status = 'cancelled' WHERE user_id = $1 AND event_type = 'task' AND google_event_id != ALL($2 ::text[])", 
+            "UPDATE events SET status = 'cancelled' WHERE user_id = $1 AND event_type = 'task' AND google_event_id != ALL($2 ::text[])",
             [req.userId, syncedIds]
           );
-          
+
           // Cancel orphaned upcoming Events & Birthdays 
           await pool.query(
-            "UPDATE events SET status = 'cancelled' WHERE user_id = $1 AND event_type IN ('event', 'birthday', 'holiday') AND start_time >= NOW() AND google_event_id != ALL($2 ::text[])", 
+            "UPDATE events SET status = 'cancelled' WHERE user_id = $1 AND event_type IN ('event', 'birthday', 'holiday') AND start_time >= NOW() AND google_event_id != ALL($2 ::text[])",
             [req.userId, syncedIds]
           );
         }
@@ -122,10 +122,10 @@ exports.createEvent = async (req, res) => {
           googleEventId = googleTask.id;
         } else {
           const googleEvent = await googleService.createCalendarEvent(req.userId, user.refresh_token, {
-             title, description, startTime, endTime, location,
-             colorId: color, recurrence, visibility, allDay, meetLink,
-             guests: guests || [],
-             reminders: reminders || [],
+            title, description, startTime, endTime, location,
+            colorId: color, recurrence, visibility, allDay, meetLink,
+            guests: guests || [],
+            reminders: reminders || [],
           });
           googleEventId = googleEvent.id;
         }
@@ -169,7 +169,7 @@ exports.deleteEvent = async (req, res) => {
     }
 
     const user = await UserModel.findById(req.userId);
-    
+
     // Attempt to delete from Google if it is synced
     if (event.google_event_id && user && user.refresh_token) {
       try {

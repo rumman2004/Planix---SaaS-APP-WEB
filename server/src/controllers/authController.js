@@ -84,12 +84,14 @@ exports.googleCallback = async (req, res) => {
 
     // Determine final redirect destination from state
     if (isMobile) {
-      // Append the token to the deep link so the mobile app can capture it
-      const mobileUrl = new URL(state);
-      mobileUrl.searchParams.append('token', sessionToken);
-      
       console.log(`[OAuth] Redirecting back to mobile app with token.`);
-      res.redirect(mobileUrl.toString());
+      
+      // --- FIX: Do not use new URL() for custom 'exp://' schemes. ---
+      // String manipulation guarantees the exact intent filter is preserved.
+      const separator = state.includes('?') ? '&' : '?';
+      const finalMobileUrl = `${state}${separator}token=${sessionToken}`;
+      
+      res.redirect(finalMobileUrl);
     } else {
       console.log(`[OAuth] Redirecting to web dashboard`);
       res.redirect(`${process.env.CLIENT_URL}/dashboard`);

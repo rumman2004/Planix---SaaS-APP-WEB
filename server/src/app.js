@@ -20,11 +20,11 @@ app.set('trust proxy', 1);
 
 // Global Middlewares
 app.use(helmet()); // Security headers
-app.use(cors({ 
+app.use(cors({
   origin: (origin, callback) => {
     // 1. Allow mobile apps & curl (which have no origin header)
     if (!origin) return callback(null, true);
-    
+
     const allowedOrigins = [
       process.env.CLIENT_URL, // e.g., https://planix-omega.vercel.app
       'http://localhost:5173',
@@ -34,25 +34,25 @@ app.use(cors({
     ];
 
     // 2. Allow specific domains or local development IPs
-    const isAllowed = allowedOrigins.filter(Boolean).includes(origin) || 
-                      origin.startsWith('http://localhost:') || 
-                      origin.startsWith('https://localhost:') ||
-                      origin.startsWith('http://192.168.');
+    const isAllowed = allowedOrigins.filter(Boolean).includes(origin) ||
+      origin.startsWith('http://localhost:') ||
+      origin.startsWith('https://localhost:') ||
+      origin.startsWith('http://192.168.');
 
     if (isAllowed) {
       callback(null, true);
     } else {
       // PRO TIP: Throw a proper error instead of just 'false' for easier debugging
-      callback(new Error('Blocked by Planix CORS Policy')); 
+      callback(new Error('Blocked by Planix CORS Policy'));
     }
   },
   credentials: true // Required to send/receive cookies
 }));
 
-app.use(express.json()); 
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); 
-app.use(morgan('dev')); 
+app.use(cookieParser());
+app.use(morgan('dev'));
 
 // Health Check Route
 app.get('/api/health', (req, res) => {
@@ -70,11 +70,11 @@ app.use((err, req, res, next) => {
   if (err.message === 'Blocked by Planix CORS Policy') {
     return res.status(403).json({ success: false, message: err.message });
   }
-  
+
   console.error('[Global Error]:', err.stack);
-  res.status(500).json({ 
-    success: false, 
-    message: 'An internal server error occurred.' 
+  res.status(500).json({
+    success: false,
+    message: 'An internal server error occurred.'
   });
 });
 
