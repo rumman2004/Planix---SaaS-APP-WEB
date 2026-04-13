@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 5000;
 
 // Start the server
 const server = app.listen(PORT, async () => {
-  logger.info(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  logger.info(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
   
   // 1. Test Database Connection on startup
   try {
@@ -16,7 +16,7 @@ const server = app.listen(PORT, async () => {
     logger.db(`✅ Connected to PostgreSQL. Server Time: ${res.rows[0].now}`);
   } catch (err) {
     logger.error('❌ Database connection failed:', err.message);
-    process.exit(1); // Exit if we can't connect to the DB
+    process.exit(1); 
   }
 
   // 2. Start Background Jobs
