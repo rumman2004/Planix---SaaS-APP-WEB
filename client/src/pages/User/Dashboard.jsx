@@ -29,7 +29,7 @@ export default function Dashboard() {
   }, [fetchEvents]);
 
   // --- Process Data Safely ---
-  const { todayEvents, upcomingEvents, stats, now, nowMinutes, greeting } = useMemo(() => {
+  const { todayEvents, upcomingEvents, upcomingFestivals, stats, now, nowMinutes, greeting } = useMemo(() => {
     const currentNow = new Date();
     const getDayKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const todayStr = getDayKey(currentNow);
@@ -41,6 +41,7 @@ export default function Dashboard() {
 
     const todayEv = [];
     const upcomingEv = [];
+    const upcomingFestivalEv = [];
     const weekEv = [];
     
     const sorted = [...(events || [])].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -48,11 +49,16 @@ export default function Dashboard() {
     sorted.forEach(ev => {
       const evDate = new Date(ev.date);
       const evDateStr = getDayKey(evDate);
+      const isSpecial = ev.eventType === 'holiday' || ev.eventType === 'birthday';
       
       if (evDateStr === todayStr) {
         todayEv.push(ev);
       } else if (evDate > currentNow) {
-        upcomingEv.push(ev);
+        if (isSpecial) {
+          upcomingFestivalEv.push(ev);
+        } else {
+          upcomingEv.push(ev);
+        }
         if (evDate <= weekFromNow) {
           weekEv.push(ev);
         }
@@ -65,6 +71,7 @@ export default function Dashboard() {
       greeting: greet,
       todayEvents: todayEv,
       upcomingEvents: upcomingEv.slice(0, 5),
+      upcomingFestivals: upcomingFestivalEv.slice(0, 6),
       weekEvents: weekEv,
       stats: [
         { label: 'Today',     value: todayEv.length, icon: CalendarDays },
@@ -341,6 +348,40 @@ export default function Dashboard() {
                       <div className="flex-1 min-w-0">
                         <div className="text-xs md:text-sm font-bold text-on-surface truncate">{ev.title}</div>
                         <div className="text-[10px] md:text-[11px] font-medium text-on-surface-variant mt-0.5 truncate">{label}{ev.startTime && !ev.allDay ? ` • ${ev.startTime}` : ''}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Festivals & Birthdays Panel */}
+          <div className="bg-surface-container-lowest rounded-3xl p-5 md:p-6 border border-outline-variant/10 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-headline font-extrabold text-base text-on-surface">🎊 Festivals & Birthdays</h3>
+              <button className="text-primary hover:text-primary-dim text-[11px] font-bold" onClick={() => navigate('/calendar')}>Calendar</button>
+            </div>
+
+            {loading ? (
+              [1,2,3].map(i => <div key={i} className="h-10 bg-surface-container-low animate-pulse rounded-xl mb-2" />)
+            ) : upcomingFestivals.length === 0 ? (
+              <p className="text-[12px] text-outline-variant text-center py-4 font-medium">No upcoming festivals or birthdays</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {upcomingFestivals.map(ev => {
+                  const isBday = ev.eventType === 'birthday';
+                  const d = new Date(ev.date);
+                  const daysUntil = Math.ceil((d - now) / 86400000);
+                  const label = daysUntil === 1 ? 'Tomorrow' : daysUntil <= 7 ? `In ${daysUntil} days` : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                  return (
+                    <div key={ev.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-surface-container-low transition-colors">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 ${isBday ? 'bg-rose-100/60' : 'bg-indigo-100/60'}`}>
+                        {isBday ? '🎂' : '🎊'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold text-on-surface truncate">{ev.title}</div>
+                        <div className={`text-[10px] font-semibold mt-0.5 ${daysUntil <= 7 ? 'text-primary' : 'text-on-surface-variant'}`}>{label}</div>
                       </div>
                     </div>
                   );
