@@ -90,13 +90,31 @@ exports.getEvents = async (req, res) => {
         const syncedIds = allItems.map(item => item.data.id).filter(Boolean);
         if (syncedIds.length > 0) {
           const pool = require('../config/db');
+          // IMPORTANT: Only cancel tasks that were fetched from Google (have a google_event_id)
+          // but are no longer returned by the API. Tasks without a google_event_id were
+          // created locally and should never be cancelled by the sync process.
           await pool.query(
-            "UPDATE events SET status = 'cancelled' WHERE user_id = $1 AND event_type = 'task' AND google_event_id != ALL($2 ::text[])",
+            `UPDATE events SET status = 'cancelled'
+             WHERE user_id = $1
+               AND event_type = 'task'
+               AND google_event_id IS NOT NULL
+               AND google_event_id != ALL($2 ::text[])`,
             [req.userId, syncedIds]
           );
+          // For calendar events (birthdays, holidays, regular events):
+          // Only cancel events whose start_time falls WITHIN the sync window we just fetched.
+          // Events outside the window were simply not fetched — do NOT cancel them.
+          const syncWindowStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
+          const syncWindowEnd = new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString();
           await pool.query(
-            "UPDATE events SET status = 'cancelled' WHERE user_id = $1 AND event_type IN ('event', 'birthday', 'holiday') AND start_time >= NOW() AND google_event_id != ALL($2 ::text[])",
-            [req.userId, syncedIds]
+            `UPDATE events SET status = 'cancelled'
+             WHERE user_id = $1
+               AND event_type IN ('event', 'birthday', 'holiday')
+               AND google_event_id IS NOT NULL
+               AND start_time >= $3
+               AND start_time <= $4
+               AND google_event_id != ALL($2 ::text[])`,
+            [req.userId, syncedIds, syncWindowStart, syncWindowEnd]
           );
         }
 
