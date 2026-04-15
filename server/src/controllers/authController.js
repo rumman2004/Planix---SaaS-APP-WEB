@@ -75,10 +75,14 @@ exports.googleCallback = async (req, res) => {
     );
 
     // Send token in an HTTP-only cookie
+    // IMPORTANT: In production, frontend (Vercel) and backend (Railway) are on different
+    // domains. SameSite 'lax' blocks cross-domain XHR/fetch requests.
+    // SameSite 'none' + Secure: true is required for cross-domain cookies to work.
+    const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('token', sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
@@ -105,7 +109,14 @@ exports.googleCallback = async (req, res) => {
 
 // 3. Logout User
 exports.logout = (req, res) => {
-  res.clearCookie('token');
+  // Must pass the same options used when setting the cookie
+  // so the browser knows which cookie to clear
+  const isProduction = process.env.NODE_ENV === 'production';
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+  });
   res.status(200).json({ success: true, message: 'Logged out successfully' });
 };
 
